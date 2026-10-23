@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { MAX_PHOTOS_PER_PLAYER, MAX_PLAYERS, type SlideContent } from '@lemne/shared';
+import {
+  MAX_PHOTOS_PER_PLAYER,
+  MAX_PLAYERS,
+  MAX_TITLES_PER_PLAYER,
+  type SlideContent,
+} from '@lemne/shared';
 import { initialState, reduce, type Action, type GameState, type RoundPlan } from './machine';
 
 function apply(state: GameState, ...actions: Action[]): GameState {
@@ -113,7 +118,7 @@ function plan(presenterId: string, assistantId: string, slides = 2): RoundPlan {
   return {
     presenterId,
     assistantId,
-    title: `titlu ${presenterId}`,
+    fallbackTitles: [`rezervă ${presenterId}`],
     optionSets: Array.from({ length: slides }, (_, i) => [slide(`s${i}a`), slide(`s${i}b`)]),
     prompts: Array.from({ length: slides }, (_, i) => (i === 1 ? 'Spune o poveste.' : null)),
   };
@@ -124,14 +129,20 @@ const threePlayers = () => apply(initialState(), join('a'), join('b'), join('c')
 const start = (rounds = [plan('a', 'b'), plan('b', 'c')]): Action => ({
   type: 'game/start',
   rounds,
+  seed: 42,
   now: NOW,
 });
 const expire = (now: number): Action => ({ type: 'timer/expire', now });
 
-/** Started game, intro finished, so round 0 is PRESENTING. */
+/** Runs timers until the phase changes away from `from`. */
+function until(s: GameState, phase: GameState['phase']): GameState {
+  for (let i = 0; i < 10 && s.phase !== phase; i++) s = apply(s, expire(s.endsAt!));
+  return s;
+}
+
+/** Started game, titles and intro skipped by timers, so round 0 is PRESENTING. */
 function presenting() {
-  const s = apply(threePlayers(), start());
-  return apply(s, expire(s.endsAt!));
+  return until(apply(threePlayers(), start()), 'PRESENTING');
 }
 
 describe('game/start', () => {
@@ -140,10 +151,9 @@ describe('game/start', () => {
     expect(reduce(s, start())).toEqual({ ok: false, error: 'NOT_ENOUGH_PLAYERS' });
   });
 
-  it('moves to the round intro with a timer and resets scores', () => {
+  it('moves to title writing with a timer', () => {
     const s = apply(threePlayers(), start());
-    expect(s.phase).toBe('ROUND_INTRO');
-    expect(s.roundIndex).toBe(0);
+    expect(s.phase).toBe('TITLE_WRITING');
     expect(s.endsAt).toBeGreaterThan(NOW);
   });
 
@@ -159,7 +169,7 @@ describe('timer/expire', () => {
     expect(reduce(s, expire(s.endsAt! - 1))).toEqual({ ok: true, state: s });
   });
 
-  it('opens the presentation after the intro', () => {
+  it('opens the presentation after titles and the intro', () => {
     expect(presenting().phase).toBe('PRESENTING');
   });
 
@@ -170,35 +180,37 @@ describe('timer/expire', () => {
 });
 
 describe('slides', () => {
-  it('lets only the assistant pick, once per slide', () => {
-    const s = presenting();
-    expect(reduce(s, { type: 'slide/pick', id: 'a', optionId: 's0a' })).toEqual({
+  const pick = (optionId: string): Action => ({ type: 'slide/pick', id: 'b', optionId });
+  const next: Action = { type: 'slide/next', id: 'a', now: NOW };
+
+  it('lets only the assistant pick', () => {
+    expect(reduce(presenting(), { type: 'slide/pick', id: 'a', optionId: 's0a' })).toEqual({
       ok: false,
       error: 'NOT_ALLOWED',
     });
-    const picked = apply(s, { type: 'slide/pick', id: 'b', optionId: 's0b' });
-    expect(picked.shown.map((x) => x.id)).toEqual(['s0b']);
-    expect(reduce(picked, { type: 'slide/pick', id: 'b', optionId: 's0a' })).toEqual({
-      ok: false,
-      error: 'WRONG_PHASE',
-    });
   });
 
-  it('rejects options that are not on offer', () => {
-    expect(reduce(presenting(), { type: 'slide/pick', id: 'b', optionId: 's1a' })).toEqual({
-      ok: false,
-      error: 'INVALID_PAYLOAD',
-    });
+  it('lets the assistant pick the next slide while the current one is up, but no further', () => {
+    const s = apply(presenting(), pick('s0b'), pick('s1a'));
+    expect(s.shown.map((x) => x.id)).toEqual(['s0b', 's1a']);
+    expect(s.slideIndex).toBe(0);
+    expect(reduce(s, pick('s2a'))).toEqual({ ok: false, error: 'WRONG_PHASE' });
   });
 
-  it('lets the presenter advance only after a pick, then goes to rating', () => {
-    const s = presenting();
-    const next: Action = { type: 'slide/next', id: 'a', now: NOW };
+  it('rejects options that are not on offer for the slide being picked', () => {
+    expect(reduce(presenting(), pick('s1a'))).toEqual({ ok: false, error: 'INVALID_PAYLOAD' });
+  });
+
+  it('only lets the presenter advance once the next slide is ready', () => {
+    const s = apply(presenting(), pick('s0a'));
     expect(reduce(s, next)).toEqual({ ok: false, error: 'WRONG_PHASE' });
-    const s1 = apply(s, { type: 'slide/pick', id: 'b', optionId: 's0a' }, next);
+    const s1 = apply(s, pick('s1a'), next);
     expect(s1.slideIndex).toBe(1);
-    const s2 = apply(s1, { type: 'slide/pick', id: 'b', optionId: 's1a' }, next);
-    expect(s2.phase).toBe('RATING');
+  });
+
+  it('finishes from the last slide without anything queued', () => {
+    const s = apply(presenting(), pick('s0a'), pick('s1a'), next, next);
+    expect(s.phase).toBe('RATING');
   });
 });
 
@@ -236,8 +248,7 @@ describe('end of game', () => {
     const ratings = [90, 10];
     const raters = ['c', 'a'];
     for (let r = 0; r < 2; r++) {
-      s = apply(s, expire(s.endsAt!)); // intro → presenting
-      s = apply(s, expire(s.endsAt!)); // presenting → rating
+      s = until(s, 'RATING');
       s = apply(s, { type: 'rating/submit', id: raters[r]!, value: ratings[r]!, now: NOW });
       s = apply(s, expire(s.endsAt!)); // results → next
     }
@@ -259,5 +270,69 @@ describe('end of game', () => {
     expect(s.phase).toBe('LOBBY');
     expect(s.players.map((p) => p.score)).toEqual([0, 0, 0]);
     expect(s.results).toEqual([]);
+  });
+});
+
+describe('titles', () => {
+  const write = (id: string, text: string): Action => ({ type: 'title/submit', id, text });
+  const done = (id: string): Action => ({ type: 'title/done', id, now: NOW });
+  const writing = () => apply(threePlayers(), start());
+  const allWrote = () =>
+    apply(
+      writing(),
+      write('a', 'A unu'),
+      write('a', 'A doi'),
+      write('b', 'B unu'),
+      write('b', 'B doi'),
+      write('c', 'C unu'),
+      write('c', 'C doi'),
+    );
+
+  it('caps titles per player and rejects duplicates across players', () => {
+    let s = writing();
+    for (let i = 0; i < MAX_TITLES_PER_PLAYER; i++) s = apply(s, write('a', `titlu ${i}`));
+    expect(reduce(s, write('a', 'încă unul'))).toEqual({ ok: false, error: 'TOO_MANY_TITLES' });
+    expect(reduce(s, write('b', 'TITLU 0'))).toEqual({ ok: false, error: 'DUPLICATE_TITLE' });
+  });
+
+  it('lets a player remove their own title', () => {
+    const s = apply(writing(), write('a', 'X'), { type: 'title/remove', id: 'a', text: 'X' });
+    expect(s.titles).toEqual([]);
+  });
+
+  it('needs the minimum before a player can say they are done', () => {
+    const s = apply(writing(), write('a', 'Doar unul'));
+    expect(reduce(s, done('a'))).toEqual({ ok: false, error: 'NOT_ENOUGH_TITLES' });
+  });
+
+  it('starts the first round once everyone is done, offering only titles by others', () => {
+    const s = apply(allWrote(), done('a'), done('b'), done('c'));
+    expect(s.phase).toBe('ROUND_INTRO');
+    expect(s.roundTitle).toBeNull();
+    expect(s.titleChoices).toHaveLength(3);
+    expect(s.titleChoices.some((t) => t.startsWith('A '))).toBe(false);
+  });
+
+  it('fills missing choices with hand-made titles', () => {
+    const s = until(apply(writing(), write('b', 'B unu')), 'ROUND_INTRO');
+    expect(s.titleChoices).toEqual(['B unu', 'rezervă a']);
+  });
+
+  it('lets only the presenter pick, marks the title used and never offers it again', () => {
+    const s = until(allWrote(), 'ROUND_INTRO');
+    const choice = s.titleChoices[0]!;
+    expect(reduce(s, { type: 'title/pick', id: 'b', text: choice, now: NOW })).toEqual({
+      ok: false,
+      error: 'NOT_ALLOWED',
+    });
+    const picked = apply(s, { type: 'title/pick', id: 'a', text: choice, now: NOW });
+    expect(picked.roundTitle).toBe(choice);
+    const next = until(until(picked, 'ROUND_RESULTS'), 'ROUND_INTRO');
+    expect(next.titleChoices).not.toContain(choice);
+  });
+
+  it('gives the first choice to a presenter who does not pick in time', () => {
+    const s = until(allWrote(), 'ROUND_INTRO');
+    expect(apply(s, expire(s.endsAt!)).roundTitle).toBe(s.titleChoices[0]);
   });
 });

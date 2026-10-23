@@ -29,7 +29,8 @@ export interface RoundInfo {
   total: number;
   presenterId: string;
   assistantId: string;
-  title: string;
+  /** null while the presenter is still picking it. */
+  title: string | null;
   /** 0-based index of the slide being picked or shown. */
   slideIndex: number;
   slideCount: number;
@@ -53,6 +54,12 @@ export interface AwardWinner {
   playerId: string;
 }
 
+export interface TitleProgress {
+  playerId: string;
+  count: number;
+  done: boolean;
+}
+
 interface CommonView {
   code: string;
   phase: Phase;
@@ -72,6 +79,8 @@ export interface HostView extends CommonView {
   slide: SlideContent | null;
   ratedCount: number;
   raterCount: number;
+  /** TITLE_WRITING: how many titles each player wrote. Never the titles themselves. */
+  titleProgress: TitleProgress[];
 }
 
 /** What one phone sees. Filtered per player so nothing leaks between roles. */
@@ -81,12 +90,24 @@ export interface PlayerView extends CommonView {
   role: Role | null;
   /** Only this player's own photos; served from /api/rooms/:code/photos/:id. */
   photoIds: string[];
-  /** Assistant only, while the current slide is not picked yet. Thumbnails only. */
+  /**
+   * Assistant only: options for the slide being picked, which runs one ahead of the
+   * projector. Thumbnails only.
+   */
   options: SlideContent[] | null;
-  /** Presenter only: the current slide was picked, so "next" is allowed. */
+  /** Assistant only: 0-based index of the slide those options are for. */
+  pickIndex: number | null;
+  /** Presenter only: the current slide is on the projector. */
+  slideUp: boolean;
+  /** Presenter only: the next slide is ready (or this is the last one), so "next" is allowed. */
   canAdvance: boolean;
   /** Presenter only. */
   prompt: string | null;
+  /** TITLE_WRITING: the titles this player wrote. */
+  myTitles: string[];
+  titlesDone: boolean;
+  /** Presenter only, during ROUND_INTRO until they pick. Never includes their own titles. */
+  titleChoices: string[] | null;
   /** Audience only, during RATING. */
   myRating: number | null;
 }
@@ -102,6 +123,9 @@ export type ErrorCode =
   | 'INVALID_PHOTO'
   | 'NOT_ENOUGH_PLAYERS'
   | 'NOT_ALLOWED'
-  | 'WRONG_PHASE';
+  | 'WRONG_PHASE'
+  | 'TOO_MANY_TITLES'
+  | 'DUPLICATE_TITLE'
+  | 'NOT_ENOUGH_TITLES';
 
 export type Ack<T> = { ok: true; data: T } | { ok: false; error: ErrorCode };

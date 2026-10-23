@@ -76,12 +76,22 @@ export function serverNow(): number {
   return Date.now() + state.clockOffset;
 }
 
-type SimpleEvent = 'game:start' | 'game:restart' | 'slide:next';
+type SimpleEvent = 'game:start' | 'game:restart' | 'slide:next' | 'title:done';
 
 /** Fire an intent that only acks ok/error. */
 export function send(event: SimpleEvent): Promise<ErrorCode | null> {
   return new Promise((resolve) =>
     socket.emit(event, (res: Ack<null>) => resolve(res.ok ? null : res.error)),
+  );
+}
+
+type TitleEvent = 'title:submit' | 'title:remove' | 'title:pick';
+
+/** Title intents; 'title:done' carries no text. */
+export function titleIntent(event: TitleEvent | 'title:done', text = ''): Promise<ErrorCode | null> {
+  if (event === 'title:done') return send(event);
+  return new Promise((resolve) =>
+    socket.emit(event, { text }, (res) => resolve(res.ok ? null : res.error)),
   );
 }
 

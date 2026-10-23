@@ -5,6 +5,7 @@ import {
   RatingSchema,
   RejoinSchema,
   SlidePickSchema,
+  TitleSchema,
   type Ack,
   type ClientToServerEvents,
   type ServerToClientEvents,
@@ -12,7 +13,7 @@ import {
 } from '@lemne/shared';
 import { content } from './content';
 import { reduce, type Action } from './game/machine';
-import { planRounds, toSlideContent } from './game/plan';
+import { imagePool, planRounds, toSlideContent } from './game/plan';
 import { photoUrl } from './photos';
 import { createRoom, getRoom, touch, type Room } from './rooms';
 import { toHostView, toPlayerView } from './views';
@@ -92,11 +93,48 @@ export function registerSocketHandlers(io: LemneServer): void {
       }
       const rounds = planRounds({
         playerIds: room.game.players.filter((p) => p.connected).map((p) => p.id),
-        slides: slidePool(room),
+        ...slidePool(room),
         titles: room.titles,
         prompts: room.prompts,
       });
-      ack(commit(io, room, { type: 'game/start', rounds, now: Date.now() }));
+      const seed = Math.floor(Math.random() * 2 ** 32);
+      ack(commit(io, room, { type: 'game/start', rounds, seed, now: Date.now() }));
+    });
+
+    socket.on('title:submit', (payload, ack) => {
+      if (typeof ack !== 'function') return;
+      const parsed = TitleSchema.safeParse(payload);
+      if (!parsed.success) return ack({ ok: false, error: 'INVALID_PAYLOAD' });
+      const { room, playerId } = playerOf(socket);
+      if (!room || !playerId) return ack({ ok: false, error: 'NOT_IN_ROOM' });
+      ack(commit(io, room, { type: 'title/submit', id: playerId, text: parsed.data.text }));
+    });
+
+    socket.on('title:remove', (payload, ack) => {
+      if (typeof ack !== 'function') return;
+      const parsed = TitleSchema.safeParse(payload);
+      if (!parsed.success) return ack({ ok: false, error: 'INVALID_PAYLOAD' });
+      const { room, playerId } = playerOf(socket);
+      if (!room || !playerId) return ack({ ok: false, error: 'NOT_IN_ROOM' });
+      ack(commit(io, room, { type: 'title/remove', id: playerId, text: parsed.data.text }));
+    });
+
+    socket.on('title:done', (ack) => {
+      if (typeof ack !== 'function') return;
+      const { room, playerId } = playerOf(socket);
+      if (!room || !playerId) return ack({ ok: false, error: 'NOT_IN_ROOM' });
+      ack(commit(io, room, { type: 'title/done', id: playerId, now: Date.now() }));
+    });
+
+    socket.on('title:pick', (payload, ack) => {
+      if (typeof ack !== 'function') return;
+      const parsed = TitleSchema.safeParse(payload);
+      if (!parsed.success) return ack({ ok: false, error: 'INVALID_PAYLOAD' });
+      const { room, playerId } = playerOf(socket);
+      if (!room || !playerId) return ack({ ok: false, error: 'NOT_IN_ROOM' });
+      ack(
+        commit(io, room, { type: 'title/pick', id: playerId, text: parsed.data.text, now: Date.now() }),
+      );
     });
 
     socket.on('game:restart', (ack) => {
@@ -165,15 +203,15 @@ function playerOf(socket: LemneSocket): { room?: Room; playerId?: string } {
   return { room: roomOf(socket), playerId: socket.data.playerId };
 }
 
-/** Hand-made slides plus every photo the players brought. */
-function slidePool(room: Room): SlideContent[] {
+/** Every photo the players brought, and the hand-made stock slides. */
+function slidePool(room: Room): { photos: SlideContent[]; stock: SlideContent[] } {
   const photos: SlideContent[] = room.game.players.flatMap((p) =>
     p.photoIds.map((id) => {
       const url = photoUrl(room.code, id);
       return { id, kind: 'image' as const, src: url, thumb: url, alt: p.name };
     }),
   );
-  return [...content.slides.map(toSlideContent), ...photos];
+  return { photos, stock: imagePool(content.slides.map(toSlideContent)) };
 }
 
 /** Runs an action through the reducer and stores the new state. Does not broadcast. */

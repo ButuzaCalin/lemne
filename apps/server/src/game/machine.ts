@@ -1,12 +1,17 @@
 import {
   AVATAR_COUNT,
   MAX_PHOTOS_PER_PLAYER,
+  MAX_TITLES_PER_PLAYER,
+  MIN_TITLES_PER_PLAYER,
   MAX_PLAYERS,
   MIN_PLAYERS,
   PRESENTATION_SECONDS,
   RATING_SECONDS,
   ROUND_INTRO_SECONDS,
   ROUND_RESULTS_SECONDS,
+  TITLE_CHOICES,
+  TITLE_PICK_SECONDS,
+  TITLE_WRITING_SECONDS,
   type ErrorCode,
   type Phase,
   type RoundResult,
@@ -28,7 +33,8 @@ export interface Player {
 export interface RoundPlan {
   presenterId: string;
   assistantId: string;
-  title: string;
+  /** Hand-made titles, only used when players wrote too few to offer a full choice. */
+  fallbackTitles: string[];
   /** One set of options per slide. */
   optionSets: SlideContent[][];
   /** One per slide; null means no prompt card for that slide. */
@@ -51,6 +57,22 @@ export interface GameState {
   ratings: Record<string, number>;
   results: RoundResult[];
   awards: AwardPick[];
+  /** Titles the players wrote in TITLE_WRITING. Each is used at most once. */
+  titles: WrittenTitle[];
+  /** Players who said they are done writing. */
+  titlesDone: string[];
+  /** Seeds the deterministic shuffle of title choices, so the reducer stays pure. */
+  titleSeed: number;
+  /** What the presenter may pick from this round. */
+  titleChoices: string[];
+  /** The presenter's pick; null while they are still choosing. */
+  roundTitle: string | null;
+}
+
+export interface WrittenTitle {
+  authorId: string;
+  text: string;
+  used: boolean;
 }
 
 export type Action =
@@ -59,7 +81,11 @@ export type Action =
   | { type: 'player/remove'; id: string }
   | { type: 'player/photoAdd'; id: string; photoId: string }
   | { type: 'player/photoRemove'; id: string; photoId: string }
-  | { type: 'game/start'; rounds: RoundPlan[]; now: number }
+  | { type: 'game/start'; rounds: RoundPlan[]; seed: number; now: number }
+  | { type: 'title/submit'; id: string; text: string }
+  | { type: 'title/remove'; id: string; text: string }
+  | { type: 'title/done'; id: string; now: number }
+  | { type: 'title/pick'; id: string; text: string; now: number }
   | { type: 'game/restart' }
   | { type: 'slide/pick'; id: string; optionId: string }
   | { type: 'slide/next'; id: string; now: number }
@@ -84,11 +110,18 @@ export function initialState(): GameState {
     ratings: {},
     results: [],
     awards: [],
+    titles: [],
+    titlesDone: [],
+    titleSeed: 0,
+    titleChoices: [],
+    roundTitle: null,
   };
 }
 
 export function currentRound(state: GameState): RoundPlan | null {
-  if (state.phase === 'LOBBY' || state.phase === 'FINAL_RESULTS') return null;
+  if (state.phase === 'LOBBY' || state.phase === 'TITLE_WRITING' || state.phase === 'FINAL_RESULTS') {
+    return null;
+  }
   return state.rounds[state.roundIndex] ?? null;
 }
 
@@ -99,6 +132,26 @@ export function raterIds(state: GameState): string[] {
   return state.players
     .filter((p) => p.id !== round.presenterId && p.id !== round.assistantId)
     .map((p) => p.id);
+}
+
+/**
+ * Which slide the assistant is choosing now, or null when they are waiting. The assistant
+ * works one slide ahead: while the presenter talks over slide N, they pick slide N+1.
+ */
+export function nextPickIndex(state: GameState): number | null {
+  const round = currentRound(state);
+  if (state.phase !== 'PRESENTING' || !round) return null;
+  const index = state.shown.length;
+  if (index >= round.optionSets.length || index > state.slideIndex + 1) return null;
+  return index;
+}
+
+/** The presenter may move on once the current slide is up and the next one is ready. */
+export function canAdvance(state: GameState): boolean {
+  const round = currentRound(state);
+  if (state.phase !== 'PRESENTING' || !round) return false;
+  const last = state.slideIndex + 1 >= round.optionSets.length;
+  return state.shown.length > (last ? state.slideIndex : state.slideIndex + 1);
 }
 
 /** Pure: never mutates `state`, never reads the clock or randomness. */
@@ -166,19 +219,61 @@ export function reduce(state: GameState, action: Action): Result {
         return fail('NOT_ENOUGH_PLAYERS');
       }
       if (action.rounds.length === 0) return fail('INVALID_PAYLOAD');
-      return ok(
-        startRound(
-          {
-            ...state,
-            rounds: action.rounds,
-            results: [],
-            awards: [],
-            players: state.players.map((p) => ({ ...p, score: 0 })),
-          },
-          0,
-          action.now,
-        ),
-      );
+      return ok({
+        ...state,
+        phase: 'TITLE_WRITING',
+        rounds: action.rounds,
+        results: [],
+        awards: [],
+        titles: [],
+        titlesDone: [],
+        titleSeed: action.seed,
+        players: state.players.map((p) => ({ ...p, score: 0 })),
+        endsAt: action.now + TITLE_WRITING_SECONDS * 1000,
+      });
+    }
+
+    case 'title/submit': {
+      if (state.phase !== 'TITLE_WRITING') return fail('WRONG_PHASE');
+      if (!state.players.some((p) => p.id === action.id)) return fail('NOT_IN_ROOM');
+      if (state.titlesDone.includes(action.id)) return fail('WRONG_PHASE');
+      const mine = state.titles.filter((t) => t.authorId === action.id);
+      if (mine.length >= MAX_TITLES_PER_PLAYER) return fail('TOO_MANY_TITLES');
+      const key = titleKey(action.text);
+      if (state.titles.some((t) => titleKey(t.text) === key)) return fail('DUPLICATE_TITLE');
+      return ok({
+        ...state,
+        titles: [...state.titles, { authorId: action.id, text: action.text, used: false }],
+      });
+    }
+
+    case 'title/remove': {
+      if (state.phase !== 'TITLE_WRITING') return fail('WRONG_PHASE');
+      if (state.titlesDone.includes(action.id)) return fail('WRONG_PHASE');
+      return ok({
+        ...state,
+        titles: state.titles.filter((t) => !(t.authorId === action.id && t.text === action.text)),
+      });
+    }
+
+    case 'title/done': {
+      if (state.phase !== 'TITLE_WRITING') return fail('WRONG_PHASE');
+      const mine = state.titles.filter((t) => t.authorId === action.id).length;
+      if (mine < MIN_TITLES_PER_PLAYER) return fail('NOT_ENOUGH_TITLES');
+      if (state.titlesDone.includes(action.id)) return ok(state);
+      const next = { ...state, titlesDone: [...state.titlesDone, action.id] };
+      const everyone = next.players
+        .filter((p) => p.connected)
+        .every((p) => next.titlesDone.includes(p.id));
+      return ok(everyone ? startRound(next, 0, action.now) : next);
+    }
+
+    case 'title/pick': {
+      if (state.phase !== 'ROUND_INTRO') return fail('WRONG_PHASE');
+      if (action.id !== currentRound(state)!.presenterId) return fail('NOT_ALLOWED');
+      if (state.roundTitle !== null) return fail('WRONG_PHASE');
+      if (!state.titleChoices.includes(action.text)) return fail('INVALID_PAYLOAD');
+      return ok(chooseTitle(state, action.text, action.now));
     }
 
     case 'game/restart': {
@@ -194,8 +289,9 @@ export function reduce(state: GameState, action: Action): Result {
       if (state.phase !== 'PRESENTING') return fail('WRONG_PHASE');
       const round = currentRound(state)!;
       if (action.id !== round.assistantId) return fail('NOT_ALLOWED');
-      if (state.shown.length > state.slideIndex) return fail('WRONG_PHASE');
-      const option = round.optionSets[state.slideIndex]?.find((o) => o.id === action.optionId);
+      const pickIndex = nextPickIndex(state);
+      if (pickIndex === null) return fail('WRONG_PHASE');
+      const option = round.optionSets[pickIndex]?.find((o) => o.id === action.optionId);
       if (!option) return fail('INVALID_PAYLOAD');
       return ok({ ...state, shown: [...state.shown, option] });
     }
@@ -204,7 +300,7 @@ export function reduce(state: GameState, action: Action): Result {
       if (state.phase !== 'PRESENTING') return fail('WRONG_PHASE');
       const round = currentRound(state)!;
       if (action.id !== round.presenterId) return fail('NOT_ALLOWED');
-      if (state.shown.length <= state.slideIndex) return fail('WRONG_PHASE');
+      if (!canAdvance(state)) return fail('WRONG_PHASE');
       if (state.slideIndex + 1 >= round.optionSets.length) return ok(startRating(state, action.now));
       return ok({ ...state, slideIndex: state.slideIndex + 1 });
     }
@@ -219,7 +315,13 @@ export function reduce(state: GameState, action: Action): Result {
     case 'timer/expire': {
       if (state.endsAt === null || action.now < state.endsAt) return ok(state);
       switch (state.phase) {
+        case 'TITLE_WRITING':
+          return ok(startRound(state, 0, action.now));
         case 'ROUND_INTRO':
+          // A presenter who doesn't choose in time gets the first option.
+          if (state.roundTitle === null) {
+            return ok(chooseTitle(state, state.titleChoices[0] ?? '', action.now));
+          }
           return ok({
             ...state,
             phase: 'PRESENTING',
@@ -250,8 +352,59 @@ function startRound(state: GameState, roundIndex: number, now: number): GameStat
     slideIndex: 0,
     shown: [],
     ratings: {},
+    roundTitle: null,
+    titleChoices: titleChoicesFor(state, roundIndex),
+    endsAt: now + TITLE_PICK_SECONDS * 1000,
+  };
+}
+
+/**
+ * Unused titles written by anyone but the presenter, in a seeded order. Hand-made titles
+ * only fill the gaps when the players wrote too few.
+ */
+function titleChoicesFor(state: GameState, roundIndex: number): string[] {
+  const round = state.rounds[roundIndex]!;
+  const written = state.titles
+    .filter((t) => !t.used && t.authorId !== round.presenterId)
+    .map((t) => t.text);
+  const choices = seededShuffle(written, state.titleSeed + roundIndex).slice(0, TITLE_CHOICES);
+  for (const fallback of round.fallbackTitles) {
+    if (choices.length >= TITLE_CHOICES) break;
+    if (!choices.some((c) => titleKey(c) === titleKey(fallback))) choices.push(fallback);
+  }
+  return choices;
+}
+
+/** Locks the title in, marks it used, and gives the TV time to reveal it. */
+function chooseTitle(state: GameState, text: string, now: number): GameState {
+  return {
+    ...state,
+    roundTitle: text,
+    titles: state.titles.map((t) => (t.text === text ? { ...t, used: true } : t)),
     endsAt: now + ROUND_INTRO_SECONDS * 1000,
   };
+}
+
+function titleKey(text: string): string {
+  return text.toLocaleLowerCase('ro').replace(/\s+/g, ' ').trim();
+}
+
+/** Fisher–Yates driven by mulberry32, so the same seed always gives the same order. */
+function seededShuffle<T>(items: T[], seed: number): T[] {
+  let a = seed >>> 0;
+  const random = () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  const out = [...items];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1));
+    [out[i], out[j]] = [out[j]!, out[i]!];
+  }
+  return out;
 }
 
 function startRating(state: GameState, now: number): GameState {
@@ -273,7 +426,7 @@ function finishRound(state: GameState, now: number): GameState {
   const result: RoundResult = {
     presenterId: round.presenterId,
     assistantId: round.assistantId,
-    title: round.title,
+    title: state.roundTitle ?? '',
     votes: Object.keys(state.ratings).length,
     ...score,
   };

@@ -22,6 +22,16 @@ export const RECONNECT_GRACE_MS = 2 * 60_000;
 export const HOST_GRACE_MS = 2 * 60_000;
 export const ROOM_IDLE_TIMEOUT_MS = 15 * 60_000;
 
+/** Before the first round every player writes presentation titles for the others. */
+export const MIN_TITLES_PER_PLAYER = 2;
+export const MAX_TITLES_PER_PLAYER = 5;
+export const MIN_TITLE_LENGTH = 3;
+export const MAX_TITLE_LENGTH = 80;
+export const TITLE_WRITING_SECONDS = 90;
+/** The presenter picks their title from this many, never one they wrote. */
+export const TITLE_CHOICES = 3;
+export const TITLE_PICK_SECONDS = 20;
+
 export const ROUND_INTRO_SECONDS = 7;
 export const ROUND_RESULTS_SECONDS = 10;
 

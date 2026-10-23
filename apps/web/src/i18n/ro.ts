@@ -60,6 +60,23 @@ export const ro = {
     noVotes: 'Nimeni n-a votat. Tăcere de pădure.',
   },
 
+  titles: {
+    hostHeading: 'Scrieți titluri de prezentări!',
+    hostHint: 'Pe telefon. Titlurile voastre ajung la ceilalți prezentatori.',
+    hostCount: (n: number) => (n === 1 ? '1 titlu' : `${n} titluri`),
+    phoneInstruction: (min: number, max: number) =>
+      `Scrie între ${min} și ${max} titluri de prezentări. Le vor primi ceilalți.`,
+    placeholder: 'ex. Viitorul sarmalelor în spațiu',
+    add: 'Adaugă',
+    remove: 'Șterge titlul',
+    done: 'Gata',
+    needMore: (n: number) => (n === 1 ? 'Mai scrie 1 titlu' : `Mai scrie ${n} titluri`),
+    waiting: 'Gata! Așteptăm restul sălii…',
+    pickInstruction: 'Alege titlul prezentării tale.',
+    picking: (name: string) => `${name} își alege titlul…`,
+    othersWait: 'Prezentatorul își alege titlul…',
+  },
+
   hostGame: {
     assistantPicking: 'Asistentul alege slide-ul…',
     rateNow: 'Cât de lemn a fost?',
@@ -81,6 +98,10 @@ export const ro = {
     pickedWait: 'Gata. Acum se descurcă el.',
     presenterWait: 'Asistentul îți alege slide-ul…',
     presenterTalk: 'Vorbește! Când ai terminat cu slide-ul, apasă mai jos.',
+    presenterTalkWaitNext: 'Vorbește! Asistentul îți pregătește următorul slide.',
+    nextPreparing: 'Următorul slide vine…',
+    pickNext: 'Alege următorul slide. Prezentatorul încă vorbește.',
+    pickedNextWait: 'Gata, e pregătit. Așteaptă să treacă la el.',
     next: 'Următorul slide',
     finish: 'Încheie prezentarea',
     promptLabel: 'Bonus de strecurat:',
@@ -127,5 +148,8 @@ export const ro = {
     NOT_ENOUGH_PLAYERS: 'Trebuie cel puțin 3 jucători conectați.',
     NOT_ALLOWED: 'Nu e rândul tău.',
     WRONG_PHASE: 'Prea târziu, jocul a mers mai departe.',
+    TOO_MANY_TITLES: 'Ajunge, ai scris destule titluri.',
+    DUPLICATE_TITLE: 'Titlul ăsta există deja. Fii original.',
+    NOT_ENOUGH_TITLES: 'Mai scrie măcar un titlu.',
   } satisfies Record<ErrorCode, string>,
 };

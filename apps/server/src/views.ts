@@ -1,6 +1,13 @@
 import type { AwardWinner, HostView, PlayerView, PublicPlayer, Role, RoundInfo } from '@lemne/shared';
 import { content } from './content';
-import { currentRound, raterIds, type GameState, type Player } from './game/machine';
+import {
+  canAdvance,
+  currentRound,
+  nextPickIndex,
+  raterIds,
+  type GameState,
+  type Player,
+} from './game/machine';
 import type { Room } from './rooms';
 
 function toPublic(p: Player): PublicPlayer {
@@ -22,7 +29,7 @@ function roundInfo(game: GameState): RoundInfo | null {
     total: game.rounds.length,
     presenterId: round.presenterId,
     assistantId: round.assistantId,
-    title: round.title,
+    title: game.roundTitle,
     slideIndex: game.slideIndex,
     slideCount: round.optionSets.length,
   };
@@ -58,6 +65,14 @@ export function toHostView(room: Room): HostView {
     slide: game.phase === 'PRESENTING' ? (game.shown[game.slideIndex] ?? null) : null,
     ratedCount: raters.filter((id) => id in game.ratings).length,
     raterCount: raters.length,
+    titleProgress:
+      game.phase === 'TITLE_WRITING'
+        ? game.players.map((p) => ({
+            playerId: p.id,
+            count: game.titles.filter((t) => t.authorId === p.id).length,
+            done: game.titlesDone.includes(p.id),
+          }))
+        : [],
   };
 }
 
@@ -75,7 +90,8 @@ export function toPlayerView(room: Room, playerId: string): PlayerView | null {
         ? 'assistant'
         : 'audience';
   const presenting = game.phase === 'PRESENTING';
-  const picked = game.shown.length > game.slideIndex;
+  const slideUp = presenting && game.shown.length > game.slideIndex;
+  const pickIndex = role === 'assistant' ? nextPickIndex(game) : null;
 
   return {
     ...common(room),
@@ -85,14 +101,24 @@ export function toPlayerView(room: Room, playerId: string): PlayerView | null {
     photoIds: me.photoIds,
     // Phones only ever get thumbnails.
     options:
-      presenting && role === 'assistant' && !picked
-        ? (round!.optionSets[game.slideIndex] ?? []).map((o) =>
+      pickIndex === null
+        ? null
+        : (round!.optionSets[pickIndex] ?? []).map((o) =>
             o.kind === 'image' ? { ...o, src: o.thumb } : o,
-          )
+          ),
+    pickIndex,
+    slideUp: role === 'presenter' && slideUp,
+    canAdvance: role === 'presenter' && canAdvance(game),
+    prompt: role === 'presenter' && slideUp ? (round!.prompts[game.slideIndex] ?? null) : null,
+    myTitles:
+      game.phase === 'TITLE_WRITING'
+        ? game.titles.filter((t) => t.authorId === playerId).map((t) => t.text)
+        : [],
+    titlesDone: game.titlesDone.includes(playerId),
+    titleChoices:
+      game.phase === 'ROUND_INTRO' && role === 'presenter' && game.roundTitle === null
+        ? game.titleChoices
         : null,
-    canAdvance: presenting && role === 'presenter' && picked,
-    prompt:
-      presenting && role === 'presenter' && picked ? (round!.prompts[game.slideIndex] ?? null) : null,
     myRating: game.phase === 'RATING' ? (game.ratings[playerId] ?? null) : null,
   };
 }

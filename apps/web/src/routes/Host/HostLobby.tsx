@@ -5,6 +5,7 @@ import { ro } from '../../i18n/ro';
 import { send } from '../../socket';
 import { Button } from '../../ui/Button';
 import { PlayerChip } from '../../ui/PlayerChip';
+import { Stage } from '../../ui/Stage';
 
 export function HostLobby({ view }: { view: HostView }) {
   const joinUrl = `${location.origin}/?code=${view.code}`;
@@ -22,9 +23,9 @@ export function HostLobby({ view }: { view: HostView }) {
   }, [joinUrl]);
 
   return (
-    <main className="grid h-dvh grid-cols-[1fr_1.2fr] gap-16 overflow-hidden bg-[radial-gradient(ellipse_at_top,var(--color-curtain)_0%,var(--color-curtain-deep)_45%,var(--color-stage)_100%)] p-16">
+    <Stage className="grid grid-cols-[1fr_1.2fr] gap-16">
       <section className="flex flex-col justify-center gap-8">
-        <h1 className="text-8xl font-extrabold text-wood-pale">{ro.appName}</h1>
+        <h1 className="wood-text text-9xl font-extrabold tracking-tight">{ro.appName}</h1>
         <div>
           <p className="text-2xl text-wood-pale/80">{ro.host.joinAt}</p>
           <p className="font-display text-4xl font-bold">{location.host}</p>
@@ -69,6 +70,6 @@ export function HostLobby({ view }: { view: HostView }) {
           <p className="text-2xl text-wood-pale/80">{ro.host.photosCount(photoCount)}</p>
         )}
       </section>
-    </main>
+    </Stage>
   );
 }

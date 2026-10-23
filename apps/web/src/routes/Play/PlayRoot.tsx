@@ -6,6 +6,7 @@ import { PlayLobby } from './PlayLobby';
 import { PlayPresenting } from './PlayPresenting';
 import { PlayRating } from './PlayRating';
 import { PlayFinal, PlayResults } from './PlayResults';
+import { PlayTitles } from './PlayTitles';
 
 export function PlayRoot() {
   const view = useGameState((s) => s.player);
@@ -32,6 +33,7 @@ export function PlayRoot() {
         </div>
       )}
       {view.phase === 'LOBBY' && <PlayLobby view={view} />}
+      {view.phase === 'TITLE_WRITING' && <PlayTitles view={view} />}
       {view.phase === 'ROUND_INTRO' && <PlayIntro view={view} />}
       {view.phase === 'PRESENTING' && <PlayPresenting view={view} />}
       {view.phase === 'RATING' && <PlayRating view={view} />}

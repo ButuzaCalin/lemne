@@ -5,12 +5,13 @@
  *   npm run content:validate
  *   npm run content:validate -- --check-urls
  */
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import {
   AwardsFileSchema,
   PromptsFileSchema,
   SlidesFileSchema,
   TitlesFileSchema,
+  LOCAL_IMAGES_PATH,
 } from '@lemne/shared';
 import type { z } from 'zod';
 
@@ -53,6 +54,15 @@ const awards = load('awards.json', AwardsFileSchema);
 if (slides) {
   checkDuplicates('slides.json', slides.map((s) => s.id));
   for (const s of slides) checkText('slides.json', s.id, s.type === 'text' ? s.text : s.alt);
+  // Local images must exist on disk; remote ones are only checked with --check-urls.
+  for (const s of slides) {
+    if (s.type !== 'image') continue;
+    for (const src of [s.src, s.thumb]) {
+      if (!src.startsWith(LOCAL_IMAGES_PATH)) continue;
+      const file = new URL(`images/${src.slice(LOCAL_IMAGES_PATH.length)}`, dir);
+      if (!existsSync(file)) errors.push(`slides.json [${s.id}]: missing file content${src}`);
+    }
+  }
 }
 if (titles) {
   checkDuplicates('titles.json', titles);
@@ -68,7 +78,9 @@ if (awards) {
 }
 
 if (slides && process.argv.includes('--check-urls')) {
-  const urls = slides.flatMap((s) => (s.type === 'image' ? [s.src, s.thumb] : []));
+  const urls = slides
+    .flatMap((s) => (s.type === 'image' ? [s.src, s.thumb] : []))
+    .filter((url) => !url.startsWith(LOCAL_IMAGES_PATH));
   await Promise.all(
     urls.map(async (url) => {
       const res = await fetch(url, { method: 'HEAD' }).catch(() => null);

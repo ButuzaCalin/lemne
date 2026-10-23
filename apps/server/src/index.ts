@@ -19,6 +19,17 @@ const io: LemneServer = new Server(app.server);
 registerSocketHandlers(io);
 registerPhotoRoutes(app, io);
 
+// Slide images made by `npm run content:images`, in dev and production alike.
+const contentImages = fileURLToPath(new URL('../../../content/images/', import.meta.url));
+if (existsSync(contentImages)) {
+  await app.register(fastifyStatic, {
+    root: contentImages,
+    prefix: '/images/',
+    decorateReply: false,
+    maxAge: '7d',
+  });
+}
+
 const webDist = fileURLToPath(new URL('../../web/dist/', import.meta.url));
 if (isProd && existsSync(webDist)) {
   await app.register(fastifyStatic, { root: webDist });

@@ -11,6 +11,7 @@ import { HostLobby } from './HostLobby';
 import { HostPresenting } from './HostPresenting';
 import { HostRating } from './HostRating';
 import { HostResults } from './HostResults';
+import { HostTitles } from './HostTitles';
 
 export function HostRoot() {
   const view = useGameState((s) => s.host);
@@ -39,6 +40,8 @@ export function HostRoot() {
     switch (view.phase) {
       case 'LOBBY':
         return <HostLobby view={view} />;
+      case 'TITLE_WRITING':
+        return <HostTitles view={view} />;
       case 'ROUND_INTRO':
         return <HostIntro view={view} />;
       case 'PRESENTING':

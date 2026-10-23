@@ -39,7 +39,7 @@ export function Home() {
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-10 px-6 py-10">
       <header className="text-center">
-        <h1 className="text-7xl font-extrabold tracking-tight text-wood-pale">{ro.appName}</h1>
+        <h1 className="wood-text text-8xl font-extrabold tracking-tight">{ro.appName}</h1>
         <p className="mt-3 text-lg text-wood-pale/70">{ro.tagline}</p>
       </header>
 

@@ -24,9 +24,9 @@ function Assistant({ view }: { view: PlayerView }) {
   const [chosen, setChosen] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // New slide → new options; forget the old choice.
-  const slideIndex = view.round?.slideIndex;
-  useEffect(() => setChosen(null), [slideIndex]);
+  // New options → forget the old choice.
+  const pickIndex = view.pickIndex;
+  useEffect(() => setChosen(null), [pickIndex]);
 
   async function pick(id: string) {
     if (chosen) return;
@@ -40,11 +40,20 @@ function Assistant({ view }: { view: PlayerView }) {
   }
 
   const options = view.options;
+  const round = view.round!;
+  // Slide 1 is picked before anything is up; after that the assistant works one ahead.
+  const instruction = options
+    ? pickIndex === 0
+      ? ro.phone.pick
+      : ro.phone.pickNext
+    : round.slideIndex + 1 >= round.slideCount
+      ? ro.phone.pickedWait
+      : ro.phone.pickedNextWait;
   return (
     <PhoneScreen>
-      <PlayHeader view={view} instruction={options ? ro.phone.pick : ro.phone.pickedWait} />
-      {view.round && (
-        <p className="text-wood-pale/70">{ro.game.slide(view.round.slideIndex, view.round.slideCount)}</p>
+      <PlayHeader view={view} instruction={instruction} />
+      {pickIndex !== null && (
+        <p className="text-wood-pale/70">{ro.game.slide(pickIndex, round.slideCount)}</p>
       )}
       <ul className="flex flex-col gap-4">
         <AnimatePresence>
@@ -93,7 +102,13 @@ function Presenter({ view }: { view: PlayerView }) {
     <PhoneScreen>
       <PlayHeader
         view={view}
-        instruction={view.canAdvance ? ro.phone.presenterTalk : ro.phone.presenterWait}
+        instruction={
+          !view.slideUp
+            ? ro.phone.presenterWait
+            : view.canAdvance
+              ? ro.phone.presenterTalk
+              : ro.phone.presenterTalkWaitNext
+        }
       />
       <p className="text-wood-pale/70">{ro.game.slide(round.slideIndex, round.slideCount)}</p>
       <div className="flex-1">
@@ -111,7 +126,7 @@ function Presenter({ view }: { view: PlayerView }) {
         )}
       </div>
       <Button onClick={next} disabled={!view.canAdvance || busy} className="min-h-20 text-2xl">
-        {last ? ro.phone.finish : ro.phone.next}
+        {last ? ro.phone.finish : view.canAdvance || !view.slideUp ? ro.phone.next : ro.phone.nextPreparing}
       </Button>
     </PhoneScreen>
   );

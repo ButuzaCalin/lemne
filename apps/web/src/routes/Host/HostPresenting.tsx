@@ -12,7 +12,7 @@ export function HostPresenting({ view }: { view: HostView }) {
   const presenter = view.players.find((p) => p.id === round.presenterId);
 
   return (
-    <Stage className="flex flex-col gap-8 !p-10">
+    <Stage className="flex flex-col gap-6 !px-24 !pt-16 !pb-12">
       <header className="flex items-center justify-between gap-8">
         <div className="min-w-0">
           <p className="text-2xl text-wood-pale/80">
@@ -23,12 +23,12 @@ export function HostPresenting({ view }: { view: HostView }) {
         <Countdown endsAt={view.endsAt} total={PRESENTATION_SECONDS} />
       </header>
 
-      <div className="relative mx-auto aspect-video min-h-0 w-full max-w-[min(100%,calc((100dvh-14rem)*16/9))] flex-1">
+      <div className="relative mx-auto aspect-video min-h-0 w-full max-w-[min(100%,calc((100dvh-17rem)*16/9))] flex-1">
         <AnimatePresence mode="wait">
           {view.slide ? (
             <motion.div
               key={view.slide.id + round.slideIndex}
-              className="absolute inset-0 shadow-slide"
+              className="absolute inset-0 rounded-card shadow-projector"
               initial={reduced ? { opacity: 0 } : { opacity: 0, y: -80, rotate: -4 }}
               animate={{ opacity: 1, y: 0, rotate: 0 }}
               exit={{ opacity: 0, y: reduced ? 0 : 40 }}

@@ -1,12 +1,18 @@
 import type { ReactNode } from 'react';
 
-/** Host (TV) backdrop: dark stage with the curtain-red glow from the top. Never scrolls. */
+/**
+ * Host (TV) backdrop: a shabby conference stage with velvet curtains, a valance and a
+ * wooden floor. Never scrolls. `className` styles the content area inside the set.
+ */
 export function Stage({ children, className = '' }: { children: ReactNode; className?: string }) {
   return (
-    <main
-      className={`h-dvh overflow-hidden bg-[radial-gradient(ellipse_at_top,var(--color-curtain)_0%,var(--color-curtain-deep)_45%,var(--color-stage)_100%)] p-16 ${className}`}
-    >
-      {children}
+    <main className="relative h-dvh overflow-hidden bg-stage">
+      <div aria-hidden className="stage-glow absolute inset-0" />
+      <div aria-hidden className="stage-floor" />
+      <div aria-hidden className="curtain-side left-0" />
+      <div aria-hidden className="curtain-side right-0 -scale-x-100" />
+      <div aria-hidden className="valance" />
+      <div className={`relative h-full px-28 pt-20 pb-24 ${className}`}>{children}</div>
     </main>
   );
 }

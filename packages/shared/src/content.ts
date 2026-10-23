@@ -2,13 +2,21 @@ import { z } from 'zod';
 
 const tags = z.array(z.string().min(1)).default([]);
 
+/** Where locally served slide images live (content/images/ on disk). */
+export const LOCAL_IMAGES_PATH = '/images/';
+
+/** A full URL (R2 later) or a file served by our own server from content/images/. */
+const ImageSrc = z.union([z.url(), z.string().regex(/^\/images\/[\w-]+\.webp$/)]);
+
 export const ImageSlideSchema = z.object({
   id: z.string().regex(/^img-\d{3,}$/),
   type: z.literal('image'),
-  src: z.url(),
-  thumb: z.url(),
+  src: ImageSrc,
+  thumb: ImageSrc,
   alt: z.string().min(1),
   tags,
+  /** First 16 hex chars of the source file's SHA-256, so re-running the import skips it. */
+  sourceHash: z.string().regex(/^[0-9a-f]{16}$/).optional(),
 });
 
 export const TextSlideSchema = z.object({

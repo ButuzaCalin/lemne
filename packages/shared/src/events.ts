@@ -1,5 +1,12 @@
 import { z } from 'zod';
-import { MAX_NAME_LENGTH, RATING_MAX, RATING_MIN, ROOM_CODE_LENGTH } from './constants';
+import {
+  MAX_NAME_LENGTH,
+  MAX_TITLE_LENGTH,
+  MIN_TITLE_LENGTH,
+  RATING_MAX,
+  RATING_MIN,
+  ROOM_CODE_LENGTH,
+} from './constants';
 import type { Ack, ErrorCode, HostView, PlayerView } from './types';
 
 export const RoomCodeSchema = z.string().trim().toUpperCase().length(ROOM_CODE_LENGTH);
@@ -27,6 +34,14 @@ export type SlidePickPayload = z.input<typeof SlidePickSchema>;
 export const RatingSchema = z.object({ value: z.number().int().min(RATING_MIN).max(RATING_MAX) });
 export type RatingPayload = z.input<typeof RatingSchema>;
 
+export const TitleSchema = z.object({
+  text: z
+    .string()
+    .transform((s) => s.replace(/\s+/g, ' ').trim().replace(/^[„"“]+|[”"“]+$/g, ''))
+    .pipe(z.string().min(MIN_TITLE_LENGTH).max(MAX_TITLE_LENGTH)),
+});
+export type TitlePayload = z.input<typeof TitleSchema>;
+
 type SimpleAck = (res: Ack<null>) => void;
 
 export interface ClientToServerEvents {
@@ -38,6 +53,10 @@ export interface ClientToServerEvents {
   'room:rejoin': (payload: RejoinPayload, ack: (res: Ack<{ role: 'host' | 'player' }>) => void) => void;
   'game:start': (ack: SimpleAck) => void;
   'game:restart': (ack: SimpleAck) => void;
+  'title:submit': (payload: TitlePayload, ack: SimpleAck) => void;
+  'title:remove': (payload: TitlePayload, ack: SimpleAck) => void;
+  'title:done': (ack: SimpleAck) => void;
+  'title:pick': (payload: TitlePayload, ack: SimpleAck) => void;
   'slide:pick': (payload: SlidePickPayload, ack: SimpleAck) => void;
   'slide:next': (ack: SimpleAck) => void;
   'rating:submit': (payload: RatingPayload, ack: SimpleAck) => void;

@@ -9,7 +9,11 @@
   }
 
   body {
-    background: var(--color-stage);
+    /* Phones get the same curtain glow as the TV, kept still while scrolling. */
+    background:
+      radial-gradient(ellipse 140% 55% at 50% -12%, var(--color-curtain-deep), transparent 75%),
+      var(--color-stage);
+    background-attachment: fixed;
     color: var(--color-projector);
     font-family: var(--font-body);
     -webkit-font-smoothing: antialiased;
@@ -71,4 +75,68 @@
  */
 html.host-screen {
   font-size: min(calc(100vw / 120), calc(100dvh / 67.5));
+}
+
+/* ---------- Stage set (host screen). Purely decorative, all sizes in rem so it scales. ---------- */
+
+@layer components {
+  .stage-glow {
+    background:
+      radial-gradient(ellipse 45% 70% at 50% -5%, rgb(255 210 74 / 0.12), transparent 70%),
+      radial-gradient(ellipse at top, var(--color-curtain) 0%, var(--color-curtain-deep) 45%, var(--color-stage) 100%);
+  }
+
+  /* Velvet side curtains: vertical folds, fading into the dark at the bottom. */
+  .curtain-side {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 4.5rem;
+    background: repeating-linear-gradient(
+      90deg,
+      var(--color-curtain-deep) 0,
+      var(--color-curtain) 1.1rem,
+      var(--color-curtain-deep) 2.25rem
+    );
+    box-shadow: inset -1.5rem 0 2rem -1rem rgb(0 0 0 / 0.6);
+    mask-image: linear-gradient(to bottom, black 70%, transparent);
+  }
+
+  /* Scalloped valance across the top. */
+  .valance {
+    position: absolute;
+    inset: 0 0 auto;
+    height: 3.5rem;
+    background:
+      radial-gradient(circle at 50% 0, var(--color-curtain) 1.6rem, transparent 1.65rem) 0 1.4rem / 3.4rem 2.2rem repeat-x,
+      linear-gradient(var(--color-curtain-deep), var(--color-curtain)) 0 0 / 100% 1.5rem no-repeat;
+    filter: drop-shadow(0 0.6rem 0.8rem rgb(0 0 0 / 0.45));
+  }
+
+  /* Wooden stage floor: planks with seams, darker toward the audience. */
+  .stage-floor {
+    position: absolute;
+    inset: auto 0 0;
+    height: 5rem;
+    background:
+      linear-gradient(to bottom, rgb(0 0 0 / 0.15), rgb(0 0 0 / 0.65)),
+      repeating-linear-gradient(90deg, var(--color-wood) 0 11rem, var(--color-curtain-deep) 11rem 11.2rem),
+      var(--color-wood);
+    box-shadow: 0 -0.4rem 0 var(--color-wood-light);
+    opacity: 0.55;
+  }
+
+  /* Wood-grain lettering for the logo. */
+  .wood-text {
+    background: repeating-linear-gradient(
+        172deg,
+        var(--color-wood-pale) 0 0.12em,
+        var(--color-wood-light) 0.14em 0.2em,
+        var(--color-wood-pale) 0.22em 0.3em
+      );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    filter: drop-shadow(0 0.08em 0 var(--color-wood));
+  }
 }
