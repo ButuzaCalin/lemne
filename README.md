@@ -291,6 +291,18 @@ npm run content:validate    # add -- --check-urls to also check image URLs
 npm run build && npm start  # production: one server on :3000 serves everything
 ```
 
+### Desktop app (LAN parties)
+`apps/desktop` wraps the same server in Electron: double-click, and the computer runs the game and shows the TV screen in its own window. Phones on the same Wi-Fi join through the lobby QR code.
+
+```bash
+npm run desktop       # run it from source
+npm run package:win   # → apps/desktop/release/Lemne-Setup-<version>.exe (works from macOS too)
+npm run package:mac   # → apps/desktop/release/Lemne-<version>.dmg
+```
+- The installer is unsigned, so Windows SmartScreen asks once: „More info → Run anyway”.
+- On first launch, allow Lemne through the Windows firewall on **private networks**, or phones can't connect.
+- F11 toggles fullscreen. The screen won't sleep while the app is open.
+
 ---
 
 *Lemne is an independent, non-commercial party game.*

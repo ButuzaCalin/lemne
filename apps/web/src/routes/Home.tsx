@@ -4,6 +4,7 @@ import { MAX_NAME_LENGTH, ROOM_CODE_LENGTH } from '@lemne/shared';
 import { ro } from '../i18n/ro';
 import { HOST_TOKEN_KEY, PLAYER_TOKEN_KEY, socket } from '../socket';
 import { Button } from '../ui/Button';
+import { Logo } from '../ui/Logo';
 
 export function Home() {
   const navigate = useNavigate();
@@ -39,7 +40,9 @@ export function Home() {
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-10 px-6 py-10">
       <header className="text-center">
-        <h1 className="wood-text text-8xl font-extrabold tracking-tight">{ro.appName}</h1>
+        <h1>
+          <Logo className="mx-auto w-64" />
+        </h1>
         <p className="mt-3 text-lg text-wood-pale/70">{ro.tagline}</p>
       </header>
 

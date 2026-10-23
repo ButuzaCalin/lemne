@@ -5,6 +5,7 @@ import { ro } from '../../i18n/ro';
 import { useJoinHost } from '../../joinHost';
 import { send } from '../../socket';
 import { Button } from '../../ui/Button';
+import { Logo } from '../../ui/Logo';
 import { PlayerChip } from '../../ui/PlayerChip';
 import { FullscreenButton } from '../../ui/FullscreenButton';
 import { Stage } from '../../ui/Stage';
@@ -29,7 +30,9 @@ export function HostLobby({ view }: { view: HostView }) {
     <Stage className="grid grid-cols-[1fr_1.2fr] gap-16">
       <FullscreenButton className="absolute top-20 right-28" />
       <section className="flex flex-col justify-center gap-8">
-        <h1 className="wood-text text-9xl font-extrabold tracking-tight">{ro.appName}</h1>
+        <h1>
+          <Logo className="-ml-4 w-80" />
+        </h1>
         <div>
           <p className="text-2xl text-wood-pale/80">{ro.host.joinAt}</p>
           <p className="font-display text-4xl font-bold">{joinHost}</p>

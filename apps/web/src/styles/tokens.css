@@ -23,6 +23,11 @@
   --color-applause: #3dbe8b;
   --color-boo: #e5484d;
 
+  /* Logo */
+  --color-forest: #46704f;
+  --color-bark: #9c5a2e;
+  --color-bark-dark: #6e3a1c;
+
   /* Rating scale: lemn (wood) → diamant (diamond) */
   --color-diamond: #9fe8ff;
 

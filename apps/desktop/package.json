@@ -1,0 +1,65 @@
+{
+  "name": "@lemne/desktop",
+  "productName": "Lemne",
+  "version": "1.0.0",
+  "description": "Lemne: joc de prezentări improvizate pentru petreceri.",
+  "private": true,
+  "main": "dist/main.cjs",
+  "scripts": {
+    "bundle": "node scripts/bundle.mjs",
+    "start": "npm run build -w @lemne/web && npm run bundle && electron .",
+    "package:win": "npm run build -w @lemne/web && npm run bundle && electron-builder --win nsis --x64",
+    "package:mac": "npm run build -w @lemne/web && npm run bundle && electron-builder --mac dmg",
+    "typecheck": "tsc -p ."
+  },
+  "devDependencies": {
+    "electron": "^45.0.0",
+    "electron-builder": "^26.15.3",
+    "esbuild": "^0.28.2"
+  },
+  "build": {
+    "appId": "ro.lemne.app",
+    "productName": "Lemne",
+    "electronVersion": "45.0.0",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "dist/**",
+      "build/icon.png",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "../../content",
+        "to": "content",
+        "filter": [
+          "**/*.json",
+          "images/**/*"
+        ]
+      },
+      {
+        "from": "../web/dist",
+        "to": "web"
+      }
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "build/icon.png",
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "Lemne",
+      "artifactName": "Lemne-Setup-${version}.${ext}"
+    },
+    "mac": {
+      "icon": "build/icon.png",
+      "category": "public.app-category.games",
+      "artifactName": "Lemne-${version}.${ext}"
+    }
+  }
+}

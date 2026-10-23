@@ -1,5 +1,4 @@
 import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import {
   AwardsFileSchema,
   PromptsFileSchema,
@@ -8,8 +7,7 @@ import {
   TransitionsFileSchema,
 } from '@lemne/shared';
 import type { z } from 'zod';
-
-const contentDir = fileURLToPath(new URL('../../../content/', import.meta.url));
+import { contentDir } from './paths';
 
 function load<S extends z.ZodType>(file: string, schema: S): z.infer<S> {
   const raw = JSON.parse(readFileSync(contentDir + file, 'utf8'));

@@ -138,6 +138,10 @@ export const ro = {
     },
   },
 
+  desktop: {
+    startFailed: 'Lemne nu a putut porni',
+  },
+
   connection: {
     reconnecting: 'Te reconectăm…',
   },

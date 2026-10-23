@@ -15,3 +15,7 @@ source_photos/*
 resulted_photos/*
 !source_photos/.gitkeep
 !resulted_photos/.gitkeep
+
+# Desktop app build output
+apps/desktop/dist/
+apps/desktop/release/
