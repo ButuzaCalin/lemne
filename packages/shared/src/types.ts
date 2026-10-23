@@ -77,6 +77,8 @@ interface CommonView {
 export interface HostView extends CommonView {
   /** Full-size slide currently on the projector. */
   slide: SlideContent | null;
+  /** Line shown for TRANSITION_TEXT_MS before the current slide; null on the first slide. */
+  transition: string | null;
   ratedCount: number;
   raterCount: number;
   /** TITLE_WRITING: how many titles each player wrote. Never the titles themselves. */

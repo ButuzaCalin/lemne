@@ -121,6 +121,7 @@ function plan(presenterId: string, assistantId: string, slides = 2): RoundPlan {
     fallbackTitles: [`rezervă ${presenterId}`],
     optionSets: Array.from({ length: slides }, (_, i) => [slide(`s${i}a`), slide(`s${i}b`)]),
     prompts: Array.from({ length: slides }, (_, i) => (i === 1 ? 'Spune o poveste.' : null)),
+    transitions: Array.from({ length: slides }, (_, i) => (i > 0 ? 'Și acum…' : null)),
   };
 }
 

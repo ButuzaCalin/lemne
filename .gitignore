@@ -9,3 +9,9 @@ dist/
 test-results/
 playwright-report/
 .playwright-mcp/
+
+# Personal photo conversion (npm run photos:convert). Keep the folders, not the photos.
+source_photos/*
+resulted_photos/*
+!source_photos/.gitkeep
+!resulted_photos/.gitkeep

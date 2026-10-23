@@ -63,6 +63,8 @@ export function toHostView(room: Room): HostView {
   return {
     ...common(room),
     slide: game.phase === 'PRESENTING' ? (game.shown[game.slideIndex] ?? null) : null,
+    transition:
+      game.phase === 'PRESENTING' ? (currentRound(game)?.transitions[game.slideIndex] ?? null) : null,
     ratedCount: raters.filter((id) => id in game.ratings).length,
     raterCount: raters.length,
     titleProgress:

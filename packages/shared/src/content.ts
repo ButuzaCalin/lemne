@@ -32,6 +32,8 @@ export type Slide = z.infer<typeof SlideSchema>;
 export const SlidesFileSchema = z.array(SlideSchema);
 export const TitlesFileSchema = z.array(z.string().min(3).max(80));
 export const PromptsFileSchema = z.array(z.string().min(3).max(100));
+/** Lines the TV shows for a moment before each new slide, e.g. „Și acum, ceva complet diferit…”. */
+export const TransitionsFileSchema = z.array(z.string().min(2).max(80));
 
 export const AwardSchema = z.object({
   id: z.string().min(1),

@@ -96,6 +96,7 @@ export function registerSocketHandlers(io: LemneServer): void {
         ...slidePool(room),
         titles: room.titles,
         prompts: room.prompts,
+        transitions: room.transitions,
       });
       const seed = Math.floor(Math.random() * 2 ** 32);
       ack(commit(io, room, { type: 'game/start', rounds, seed, now: Date.now() }));

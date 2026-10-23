@@ -5,6 +5,7 @@ import {
   PromptsFileSchema,
   SlidesFileSchema,
   TitlesFileSchema,
+  TransitionsFileSchema,
 } from '@lemne/shared';
 import type { z } from 'zod';
 
@@ -19,5 +20,6 @@ export const content = {
   slides: load('slides.json', SlidesFileSchema),
   titles: load('titles.json', TitlesFileSchema),
   prompts: load('prompts.json', PromptsFileSchema),
+  transitions: load('transitions.json', TransitionsFileSchema),
   awards: load('awards.json', AwardsFileSchema),
 };

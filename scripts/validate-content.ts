@@ -11,6 +11,7 @@ import {
   PromptsFileSchema,
   SlidesFileSchema,
   TitlesFileSchema,
+  TransitionsFileSchema,
   LOCAL_IMAGES_PATH,
 } from '@lemne/shared';
 import type { z } from 'zod';
@@ -50,6 +51,7 @@ const slides = load('slides.json', SlidesFileSchema);
 const titles = load('titles.json', TitlesFileSchema);
 const prompts = load('prompts.json', PromptsFileSchema);
 const awards = load('awards.json', AwardsFileSchema);
+const transitions = load('transitions.json', TransitionsFileSchema);
 
 if (slides) {
   checkDuplicates('slides.json', slides.map((s) => s.id));
@@ -71,6 +73,10 @@ if (titles) {
 if (prompts) {
   checkDuplicates('prompts.json', prompts);
   prompts.forEach((p, i) => checkText('prompts.json', String(i), p));
+}
+if (transitions) {
+  checkDuplicates('transitions.json', transitions);
+  transitions.forEach((t, i) => checkText('transitions.json', String(i), t));
 }
 if (awards) {
   checkDuplicates('awards.json', awards.map((a) => a.id));
@@ -97,5 +103,5 @@ if (errors.length) {
 const images = slides?.filter((s) => s.type === 'image').length ?? 0;
 console.log(
   `✓ content OK: ${slides?.length} slides (${images} images), ${titles?.length} titles, ` +
-    `${prompts?.length} prompts, ${awards?.length} awards`,
+    `${prompts?.length} prompts, ${transitions?.length} transitions, ${awards?.length} awards`,
 );

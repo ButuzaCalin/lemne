@@ -37,6 +37,8 @@ export interface RoundPlan {
   fallbackTitles: string[];
   /** One set of options per slide. */
   optionSets: SlideContent[][];
+  /** One per slide: the line the TV shows before it. Null for the first slide. */
+  transitions: (string | null)[];
   /** One per slide; null means no prompt card for that slide. */
   prompts: (string | null)[];
 }

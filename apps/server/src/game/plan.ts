@@ -17,6 +17,7 @@ export interface PlanInput {
   stock: SlideContent[];
   titles: Deck<string>;
   prompts: Deck<string>;
+  transitions: Deck<string>;
   random?: () => number;
 }
 
@@ -27,6 +28,7 @@ export function planRounds({
   stock,
   titles,
   prompts,
+  transitions,
   random = Math.random,
 }: PlanInput): RoundPlan[] {
   const order = shuffled(playerIds, random);
@@ -40,6 +42,9 @@ export function planRounds({
     assistantId: order[(i + 1) % order.length]!,
     fallbackTitles: titles.draw(TITLE_CHOICES),
     optionSets: buildOptionSets(dealt[i]!, stockDeck, random),
+    transitions: Array.from({ length: SLIDES_PER_PRESENTATION }, (_, s) =>
+      s > 0 ? (transitions.draw(1)[0] ?? null) : null,
+    ),
     prompts: Array.from({ length: SLIDES_PER_PRESENTATION }, (_, s) =>
       s > 0 && random() < PROMPT_CHANCE ? (prompts.draw(1)[0] ?? null) : null,
     ),

@@ -16,6 +16,8 @@ export const PHOTO_MAX_EDGE_PX = 1280;
 export const SLIDES_PER_PRESENTATION = 6;
 export const SLIDE_OPTIONS = 3;
 export const PRESENTATION_SECONDS = 120;
+/** How long the transition line stays on the TV before the next slide appears. */
+export const TRANSITION_TEXT_MS = 2000;
 export const RATING_SECONDS = 20;
 
 export const RECONNECT_GRACE_MS = 2 * 60_000;

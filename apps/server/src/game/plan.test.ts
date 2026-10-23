@@ -22,6 +22,7 @@ describe('imagePool', () => {
 describe('planRounds', () => {
   const titles = new Deck(['t1', 't2', 't3']);
   const prompts = new Deck(['p']);
+  const transitions = new Deck(['tr1', 'tr2']);
   const stock = Array.from({ length: 30 }, (_, i) => image(`stock${i}`));
   const players = ['a', 'b', 'c'];
   const photoIds = (round: RoundPlan) =>
@@ -29,14 +30,14 @@ describe('planRounds', () => {
 
   it('spreads player photos evenly across presentations', () => {
     const photos = Array.from({ length: 7 }, (_, i) => image(`photo${i}`));
-    const rounds = planRounds({ playerIds: players, photos, stock, titles, prompts });
+    const rounds = planRounds({ playerIds: players, photos, stock, titles, prompts, transitions });
     const counts = rounds.map((r) => photoIds(r).length).sort();
     expect(counts).toEqual([2, 2, 3]);
   });
 
   it('uses every photo and fills the rest with stock, three options per slide', () => {
     const photos = Array.from({ length: 4 }, (_, i) => image(`photo${i}`));
-    const rounds = planRounds({ playerIds: players, photos, stock, titles, prompts });
+    const rounds = planRounds({ playerIds: players, photos, stock, titles, prompts, transitions });
     expect(new Set(rounds.flatMap(photoIds).map((p) => p.id)).size).toBe(4);
     for (const set of rounds.flatMap((r) => r.optionSets)) {
       expect(set).toHaveLength(SLIDE_OPTIONS);
@@ -46,9 +47,15 @@ describe('planRounds', () => {
 
   it('puts at most one photo per slide until every slide has one', () => {
     const photos = Array.from({ length: 3 * SLIDES_PER_PRESENTATION }, (_, i) => image(`photo${i}`));
-    const rounds = planRounds({ playerIds: players, photos, stock, titles, prompts });
+    const rounds = planRounds({ playerIds: players, photos, stock, titles, prompts, transitions });
     for (const set of rounds.flatMap((r) => r.optionSets)) {
       expect(set.filter((o) => o.id.startsWith('photo'))).toHaveLength(1);
     }
+  });
+
+  it('gives every slide but the first a transition line', () => {
+    const [round] = planRounds({ playerIds: players, photos: [], stock, titles, prompts, transitions });
+    expect(round!.transitions[0]).toBeNull();
+    expect(round!.transitions.slice(1).every((t) => t === 'tr1' || t === 'tr2')).toBe(true);
   });
 });

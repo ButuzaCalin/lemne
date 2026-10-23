@@ -25,6 +25,7 @@ export interface Room {
   /** Titles and prompts don't repeat within a room's session. */
   titles: Deck<string>;
   prompts: Deck<string>;
+  transitions: Deck<string>;
   /** Fires `timer/expire` when game.endsAt passes. */
   timer: NodeJS.Timeout | null;
 }
@@ -47,6 +48,7 @@ export function createRoom(hostSocketId: string): Room {
     photos: new Map(),
     titles: new Deck(content.titles),
     prompts: new Deck(content.prompts),
+    transitions: new Deck(content.transitions),
     timer: null,
   };
   rooms.set(room.code, room);

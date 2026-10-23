@@ -16,7 +16,8 @@
     "test": "npm run test --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present && tsc -p scripts",
     "content:validate": "tsx scripts/validate-content.ts",
-    "content:images": "tsx scripts/prepare-images.ts"
+    "content:images": "tsx scripts/prepare-images.ts",
+    "photos:convert": "tsx scripts/convert-photos.ts"
   },
   "devDependencies": {
     "@types/node": "^26.6.5",

@@ -5,6 +5,7 @@ import { ro } from '../../i18n/ro';
 import { send } from '../../socket';
 import { Button } from '../../ui/Button';
 import { PlayerChip } from '../../ui/PlayerChip';
+import { FullscreenButton } from '../../ui/FullscreenButton';
 import { Stage } from '../../ui/Stage';
 
 export function HostLobby({ view }: { view: HostView }) {
@@ -24,6 +25,7 @@ export function HostLobby({ view }: { view: HostView }) {
 
   return (
     <Stage className="grid grid-cols-[1fr_1.2fr] gap-16">
+      <FullscreenButton className="absolute top-20 right-28" />
       <section className="flex flex-col justify-center gap-8">
         <h1 className="wood-text text-9xl font-extrabold tracking-tight">{ro.appName}</h1>
         <div>
@@ -36,16 +38,7 @@ export function HostLobby({ view }: { view: HostView }) {
             {view.code}
           </p>
         </div>
-        <div className="flex items-end gap-6">
-          {qr && <img src={qr} alt="" className="size-56 rounded-card shadow-slide" />}
-          <button
-            type="button"
-            onClick={() => document.documentElement.requestFullscreen?.().catch(() => {})}
-            className="text-xl text-wood-pale/70 underline"
-          >
-            {ro.hostGame.fullscreen}
-          </button>
-        </div>
+        {qr && <img src={qr} alt="" className="size-56 rounded-card shadow-slide" />}
       </section>
 
       <section className="flex flex-col justify-center gap-6">
