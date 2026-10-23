@@ -95,6 +95,12 @@ export function titleIntent(event: TitleEvent | 'title:done', text = ''): Promis
   );
 }
 
+export function setReady(ready: boolean): Promise<ErrorCode | null> {
+  return new Promise((resolve) =>
+    socket.emit('player:ready', { ready }, (res) => resolve(res.ok ? null : res.error)),
+  );
+}
+
 export function pickSlide(optionId: string): Promise<ErrorCode | null> {
   return new Promise((resolve) =>
     socket.emit('slide:pick', { optionId }, (res) => resolve(res.ok ? null : res.error)),

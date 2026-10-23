@@ -1,6 +1,22 @@
 import type { PublicPlayer } from '@lemne/shared';
 
-export function PlayerChip({ player, badge }: { player: PublicPlayer; badge?: string }) {
+type BadgeTone = 'curtain' | 'applause' | 'muted';
+
+const badgeTones: Record<BadgeTone, string> = {
+  curtain: 'bg-curtain',
+  applause: 'bg-applause text-ink',
+  muted: 'bg-stage text-wood-pale/70',
+};
+
+export function PlayerChip({
+  player,
+  badge,
+  badgeTone = 'curtain',
+}: {
+  player: PublicPlayer;
+  badge?: string;
+  badgeTone?: BadgeTone;
+}) {
   return (
     <div
       className={`flex items-center gap-3 rounded-card bg-stage-raised px-4 py-3 shadow-[0_0.3rem_0_var(--color-curtain-deep)] ${player.connected ? '' : 'opacity-40'}`}
@@ -13,7 +29,7 @@ export function PlayerChip({ player, badge }: { player: PublicPlayer; badge?: st
       </span>
       <span className="font-display text-2xl font-bold">{player.name}</span>
       {badge && (
-        <span className="ml-auto rounded-button bg-curtain px-3 py-1 text-sm font-semibold">
+        <span className={`ml-auto rounded-button px-3 py-1 text-sm font-semibold ${badgeTones[badgeTone]}`}>
           {badge}
         </span>
       )}

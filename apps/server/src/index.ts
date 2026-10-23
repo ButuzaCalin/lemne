@@ -4,6 +4,7 @@ import fastifyStatic from '@fastify/static';
 import Fastify from 'fastify';
 import { Server } from 'socket.io';
 import { content } from './content';
+import { lanAddress } from './lan';
 import { registerPhotoRoutes } from './photos';
 import { sweepRooms } from './rooms';
 import { registerSocketHandlers, type LemneServer } from './socket';
@@ -14,6 +15,8 @@ const isProd = process.env.NODE_ENV === 'production';
 const app = Fastify({ logger: { level: isProd ? 'info' : 'debug' } });
 
 app.get('/health', async () => ({ ok: true }));
+// Lets a TV opened at localhost put the Wi-Fi address in its join QR code.
+app.get('/api/lan', async () => ({ address: lanAddress() }));
 
 const io: LemneServer = new Server(app.server);
 registerSocketHandlers(io);

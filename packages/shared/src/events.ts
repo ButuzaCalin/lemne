@@ -42,6 +42,9 @@ export const TitleSchema = z.object({
 });
 export type TitlePayload = z.input<typeof TitleSchema>;
 
+export const ReadySchema = z.object({ ready: z.boolean() });
+export type ReadyPayload = z.input<typeof ReadySchema>;
+
 type SimpleAck = (res: Ack<null>) => void;
 
 export interface ClientToServerEvents {
@@ -51,6 +54,7 @@ export interface ClientToServerEvents {
     ack: (res: Ack<{ playerId: string; playerToken: string }>) => void,
   ) => void;
   'room:rejoin': (payload: RejoinPayload, ack: (res: Ack<{ role: 'host' | 'player' }>) => void) => void;
+  'player:ready': (payload: ReadyPayload, ack: SimpleAck) => void;
   'game:start': (ack: SimpleAck) => void;
   'game:restart': (ack: SimpleAck) => void;
   'title:submit': (payload: TitlePayload, ack: SimpleAck) => void;

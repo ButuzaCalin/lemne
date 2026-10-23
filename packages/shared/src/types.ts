@@ -21,6 +21,7 @@ export interface PublicPlayer {
   connected: boolean;
   score: number;
   photoCount: number;
+  ready: boolean;
 }
 
 export interface RoundInfo {
@@ -128,6 +129,7 @@ export type ErrorCode =
   | 'WRONG_PHASE'
   | 'TOO_MANY_TITLES'
   | 'DUPLICATE_TITLE'
-  | 'NOT_ENOUGH_TITLES';
+  | 'NOT_ENOUGH_TITLES'
+  | 'PLAYERS_NOT_READY';
 
 export type Ack<T> = { ok: true; data: T } | { ok: false; error: ErrorCode };

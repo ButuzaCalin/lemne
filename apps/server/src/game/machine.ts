@@ -27,6 +27,8 @@ export interface Player {
   score: number;
   /** Uploaded photo ids; the bytes live in Room.photos. */
   photoIds: string[];
+  /** Tapped „Sunt gata” in the lobby. The VIP doesn't need to: starting is their yes. */
+  ready: boolean;
 }
 
 /** Everything random about a round, drawn by the caller before the game starts. */
@@ -81,6 +83,7 @@ export type Action =
   | { type: 'player/join'; id: string; name: string }
   | { type: 'player/connection'; id: string; connected: boolean }
   | { type: 'player/remove'; id: string }
+  | { type: 'player/ready'; id: string; ready: boolean }
   | { type: 'player/photoAdd'; id: string; photoId: string }
   | { type: 'player/photoRemove'; id: string; photoId: string }
   | { type: 'game/start'; rounds: RoundPlan[]; seed: number; now: number }
@@ -125,6 +128,11 @@ export function currentRound(state: GameState): RoundPlan | null {
     return null;
   }
   return state.rounds[state.roundIndex] ?? null;
+}
+
+/** Every connected player except the VIP has said they're ready. */
+export function everyoneReady(state: GameState): boolean {
+  return state.players.every((p) => !p.connected || p.id === state.vipId || p.ready);
 }
 
 /** Players who rate the current round: everyone except its presenter and assistant. */
@@ -174,6 +182,7 @@ export function reduce(state: GameState, action: Action): Result {
         connected: true,
         score: 0,
         photoIds: [],
+        ready: false,
       };
       return ok({
         ...state,
@@ -194,6 +203,12 @@ export function reduce(state: GameState, action: Action): Result {
       const players = state.players.filter((p) => p.id !== action.id);
       const vipId = state.vipId === action.id ? (players[0]?.id ?? null) : state.vipId;
       return ok({ ...state, players, vipId });
+    }
+
+    case 'player/ready': {
+      if (state.phase !== 'LOBBY') return fail('GAME_IN_PROGRESS');
+      if (!state.players.some((p) => p.id === action.id)) return fail('NOT_IN_ROOM');
+      return ok(updatePlayer(state, action.id, { ready: action.ready }));
     }
 
     case 'player/photoAdd': {
@@ -220,6 +235,7 @@ export function reduce(state: GameState, action: Action): Result {
       if (state.players.filter((p) => p.connected).length < MIN_PLAYERS) {
         return fail('NOT_ENOUGH_PLAYERS');
       }
+      if (!everyoneReady(state)) return fail('PLAYERS_NOT_READY');
       if (action.rounds.length === 0) return fail('INVALID_PAYLOAD');
       return ok({
         ...state,
@@ -282,7 +298,7 @@ export function reduce(state: GameState, action: Action): Result {
       if (state.phase !== 'FINAL_RESULTS') return fail('WRONG_PHASE');
       return ok({
         ...initialState(),
-        players: state.players.map((p) => ({ ...p, score: 0 })),
+        players: state.players.map((p) => ({ ...p, score: 0, ready: false })),
         vipId: state.vipId,
       });
     }

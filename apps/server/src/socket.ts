@@ -3,6 +3,7 @@ import type { Server, Socket } from 'socket.io';
 import {
   JoinRoomSchema,
   RatingSchema,
+  ReadySchema,
   RejoinSchema,
   SlidePickSchema,
   TitleSchema,
@@ -81,6 +82,15 @@ export function registerSocketHandlers(io: LemneServer): void {
       socket.data = { code: room.code, playerId };
       commit(io, room, { type: 'player/connection', id: playerId, connected: true });
       ack({ ok: true, data: { role: 'player' } });
+    });
+
+    socket.on('player:ready', (payload, ack) => {
+      if (typeof ack !== 'function') return;
+      const parsed = ReadySchema.safeParse(payload);
+      if (!parsed.success) return ack({ ok: false, error: 'INVALID_PAYLOAD' });
+      const { room, playerId } = playerOf(socket);
+      if (!room || !playerId) return ack({ ok: false, error: 'NOT_IN_ROOM' });
+      ack(commit(io, room, { type: 'player/ready', id: playerId, ready: parsed.data.ready }));
     });
 
     // The host screen or the VIP's phone can start; anyone else is refused.

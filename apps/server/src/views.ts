@@ -18,6 +18,7 @@ function toPublic(p: Player): PublicPlayer {
     connected: p.connected,
     score: p.score,
     photoCount: p.photoIds.length,
+    ready: p.ready,
   };
 }
 

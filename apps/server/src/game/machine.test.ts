@@ -126,7 +126,9 @@ function plan(presenterId: string, assistantId: string, slides = 2): RoundPlan {
 }
 
 const NOW = 1_000_000;
-const threePlayers = () => apply(initialState(), join('a'), join('b'), join('c'));
+const ready = (id: string, isReady = true): Action => ({ type: 'player/ready', id, ready: isReady });
+const threePlayers = () =>
+  apply(initialState(), join('a'), join('b'), join('c'), ready('b'), ready('c'));
 const start = (rounds = [plan('a', 'b'), plan('b', 'c')]): Action => ({
   type: 'game/start',
   rounds,
@@ -146,9 +148,38 @@ function presenting() {
   return until(apply(threePlayers(), start()), 'PRESENTING');
 }
 
+describe('ready', () => {
+  it('blocks the start until every connected player but the VIP is ready', () => {
+    const s = apply(initialState(), join('a'), join('b'), join('c'), ready('b'));
+    expect(reduce(s, start())).toEqual({ ok: false, error: 'PLAYERS_NOT_READY' });
+    expect(apply(s, ready('c'), start()).phase).toBe('TITLE_WRITING');
+  });
+
+  it('does not wait for disconnected players', () => {
+    const s = apply(initialState(), join('a'), join('b'), join('c'), join('d'), ready('b'), ready('c'), {
+      type: 'player/connection',
+      id: 'd',
+      connected: false,
+    });
+    expect(apply(s, start()).phase).toBe('TITLE_WRITING');
+  });
+
+  it('can be taken back', () => {
+    const s = apply(threePlayers(), ready('c', false));
+    expect(reduce(s, start())).toEqual({ ok: false, error: 'PLAYERS_NOT_READY' });
+  });
+
+  it('only changes in the lobby', () => {
+    expect(reduce(apply(threePlayers(), start()), ready('b', false))).toEqual({
+      ok: false,
+      error: 'GAME_IN_PROGRESS',
+    });
+  });
+});
+
 describe('game/start', () => {
   it('needs at least three connected players', () => {
-    const s = apply(initialState(), join('a'), join('b'));
+    const s = apply(initialState(), join('a'), join('b'), ready('b'));
     expect(reduce(s, start())).toEqual({ ok: false, error: 'NOT_ENOUGH_PLAYERS' });
   });
 

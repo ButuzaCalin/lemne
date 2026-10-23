@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import QRCode from 'qrcode';
-import { MIN_PLAYERS, type HostView } from '@lemne/shared';
+import { MIN_PLAYERS, playersNotReady, type HostView } from '@lemne/shared';
 import { ro } from '../../i18n/ro';
+import { useJoinHost } from '../../joinHost';
 import { send } from '../../socket';
 import { Button } from '../../ui/Button';
 import { PlayerChip } from '../../ui/PlayerChip';
@@ -9,7 +10,8 @@ import { FullscreenButton } from '../../ui/FullscreenButton';
 import { Stage } from '../../ui/Stage';
 
 export function HostLobby({ view }: { view: HostView }) {
-  const joinUrl = `${location.origin}/?code=${view.code}`;
+  const joinHost = useJoinHost();
+  const joinUrl = `${location.protocol}//${joinHost}/?code=${view.code}`;
   const photoCount = view.players.reduce((n, p) => n + p.photoCount, 0);
   const [qr, setQr] = useState<string | null>(null);
 
@@ -30,7 +32,7 @@ export function HostLobby({ view }: { view: HostView }) {
         <h1 className="wood-text text-9xl font-extrabold tracking-tight">{ro.appName}</h1>
         <div>
           <p className="text-2xl text-wood-pale/80">{ro.host.joinAt}</p>
-          <p className="font-display text-4xl font-bold">{location.host}</p>
+          <p className="font-display text-4xl font-bold">{joinHost}</p>
         </div>
         <div>
           <p className="text-2xl text-wood-pale/80">{ro.host.roomCode}</p>
@@ -50,11 +52,16 @@ export function HostLobby({ view }: { view: HostView }) {
         <ul className="grid grid-cols-2 gap-4">
           {view.players.map((p) => (
             <li key={p.id}>
-              <PlayerChip player={p} badge={p.id === view.vipId ? ro.host.vip : undefined} />
+              <PlayerChip
+                player={p}
+                badge={p.id === view.vipId ? ro.host.vip : p.ready ? ro.game.ready : ro.game.notReadyBadge}
+                badgeTone={p.id === view.vipId ? 'curtain' : p.ready ? 'applause' : 'muted'}
+              />
             </li>
           ))}
         </ul>
-        {view.players.filter((p) => p.connected).length >= MIN_PLAYERS && (
+        {view.players.filter((p) => p.connected).length >= MIN_PLAYERS &&
+          playersNotReady(view.players, view.vipId).length === 0 && (
           <Button variant="secondary" className="self-start" onClick={() => send('game:start')}>
             {ro.game.start}
           </Button>
