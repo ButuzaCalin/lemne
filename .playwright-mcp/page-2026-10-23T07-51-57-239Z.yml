@@ -1,0 +1,13 @@
+- main [ref=e13]:
+  - generic [ref=e14]:
+    - heading "Lemne" [level=1] [ref=e15]
+    - generic [ref=e16]:
+      - paragraph [ref=e17]: Intră de pe telefon pe
+      - paragraph [ref=e18]: localhost:3999
+    - generic [ref=e19]:
+      - paragraph [ref=e20]: Codul camerei
+      - paragraph [ref=e21]: VSYD
+    - button "Ecran complet" [ref=e23]
+  - generic [ref=e24]:
+    - heading "Așteptăm prezentatorii…" [level=2] [ref=e25]
+    - list

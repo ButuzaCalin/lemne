@@ -1,0 +1,74 @@
+@import 'tailwindcss';
+@import './tokens.css';
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    background: var(--color-stage);
+    color: var(--color-projector);
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior: none;
+    user-select: none;
+  }
+
+  input {
+    user-select: text;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-tap: 0ms;
+    --duration-phase: 0ms;
+    --duration-celebrate: 0ms;
+  }
+}
+
+/* Wood → diamond rating slider (phones). Big thumb for one-handed use. */
+.rating-slider {
+  appearance: none;
+  height: 3.5rem;
+  border-radius: var(--radius-button);
+  background: linear-gradient(90deg, var(--color-wood), var(--color-wood-light) 40%, var(--color-diamond));
+  touch-action: none;
+}
+
+.rating-slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 4rem;
+  height: 4rem;
+  border-radius: 999px;
+  background: var(--color-spotlight);
+  box-shadow: var(--shadow-podium);
+}
+
+.rating-slider::-moz-range-thumb {
+  width: 4rem;
+  height: 4rem;
+  border: 0;
+  border-radius: 999px;
+  background: var(--color-spotlight);
+  box-shadow: var(--shadow-podium);
+}
+
+/*
+ * Host (TV) layouts are designed at 1920×1080. Every size is in rem, so scaling the root
+ * font keeps the whole 16:9 composition fitting any screen: 16px at 1080p, 10.67px at 720p,
+ * 32px at 4K, and letterboxed by the smaller axis on odd aspect ratios.
+ */
+html.host-screen {
+  font-size: min(calc(100vw / 120), calc(100dvh / 67.5));
+}

@@ -1,0 +1,9 @@
+- main [ref=e3]:
+  - generic [ref=e4]:
+    - heading "Lemne" [level=1] [ref=e5]
+    - paragraph [ref=e6]: Prezentări pe care nu le-ai pregătit niciodată.
+  - generic [ref=e7]:
+    - button "Intră în cameră" [ref=e8]
+    - paragraph [ref=e9]: De pe telefon
+    - button "Creează cameră" [ref=e10]
+    - paragraph [ref=e11]: Pe ecranul mare (TV sau laptop)

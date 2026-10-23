@@ -1,0 +1,27 @@
+{
+  "name": "lemne",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "concurrently -k -n server,web -c yellow,cyan \"npm run dev -w @lemne/server\" \"npm run dev -w @lemne/web\"",
+    "build": "npm run build -w @lemne/web",
+    "start": "npm run start -w @lemne/server",
+    "test": "npm run test --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present && tsc -p scripts",
+    "content:validate": "tsx scripts/validate-content.ts",
+    "content:images": "tsx scripts/prepare-images.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "concurrently": "^10.0.6",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  }
+}

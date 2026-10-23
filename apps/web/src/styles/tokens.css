@@ -1,0 +1,56 @@
+/*
+ * Lemne design tokens. Source of truth for color, type, radius, shadow and motion.
+ * See .claude/skills/lemne-design/SKILL.md before changing anything here.
+ * Tailwind v4 turns every --color-* / --font-* / --radius-* here into utilities.
+ */
+@theme static {
+  /* Stage */
+  --color-stage: #17110e;
+  --color-stage-raised: #231a15;
+  --color-curtain: #7a1e2c;
+  --color-curtain-deep: #4a0f1a;
+  --color-wood: #8b5a2b;
+  --color-wood-light: #c08a52;
+  --color-wood-pale: #e9c79a;
+
+  /* Projector slide */
+  --color-projector: #fff8e7;
+  --color-ink: #1e1a17;
+  --color-ink-soft: #5c524a;
+
+  /* Accents */
+  --color-spotlight: #ffd24a;
+  --color-applause: #3dbe8b;
+  --color-boo: #e5484d;
+
+  /* Rating scale: lemn (wood) → diamant (diamond) */
+  --color-diamond: #9fe8ff;
+
+  /* Player avatar colors (index = PublicPlayer.avatar) */
+  --color-avatar-0: #ffd24a;
+  --color-avatar-1: #ff8a5b;
+  --color-avatar-2: #3dbe8b;
+  --color-avatar-3: #5ab0ff;
+  --color-avatar-4: #c792ff;
+  --color-avatar-5: #ff6fa8;
+  --color-avatar-6: #9be15d;
+  --color-avatar-7: #e9c79a;
+
+  --font-display: 'Bricolage Grotesque', system-ui, sans-serif;
+  --font-body: 'DM Sans', system-ui, sans-serif;
+
+  --radius-card: 1.25rem;
+  --radius-button: 999px;
+
+  --shadow-podium: 0 6px 0 0 var(--color-wood), 0 14px 30px -8px rgb(0 0 0 / 0.6);
+  --shadow-slide: 0 30px 80px -20px rgb(0 0 0 / 0.7);
+
+  --ease-pop: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+:root {
+  --duration-tap: 150ms;
+  --duration-phase: 500ms;
+  --duration-celebrate: 1200ms;
+}
